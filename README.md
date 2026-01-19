@@ -197,7 +197,7 @@ The author is not responsible for misuse. 🙃
   <tr>
     <td align="center">
       <b>🔥 HetArgon 🔥</b><br>
-      <a href="https://t.me/hetargon">📱 Telegram</a> •
+      <a href="https://t.me/heyargon">📱 Telegram</a> •
       <a href="https://github.com/itzmepromgitman">🐙 GitHub</a>
     </td>
   </tr>
@@ -210,7 +210,8 @@ The author is not responsible for misuse. 🙃
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/itzmepromgitman/hdhub-bypass?style=social"/>
+  <img src="https://img.shields.io/github/stars/itzmepromgitman/HDhub-bypass-api?style=social"/>
 </p>
 
 </blockquote>
+
