@@ -194,63 +194,50 @@ class HDHubScraper:
         results = []
         seen_urls = set()
 
-        # Pattern 1: Try article cards first
-        cards = re.findall(r'<article[^>]*>(.*?)</article>', html, re.DOTALL)
+        # Pattern: Match <a ... class="movie-card"> ... </a>
+        # We use a non-greedy dot match to capture the whole card content
+        cards = re.findall(r'<a[^>]*href="([^"]+)"[^>]*class="[^"]*movie-card[^"]*"[^>]*>(.*?)</a>', html, re.DOTALL)
 
-        for card in cards:
-            # Find URL and title in card
-            link_match = re.search(r'href="(https://4khdhub\.dad/[^"?]+)"[^>]*>([^<]+)', card)
-            if link_match:
-                url = link_match.group(1)
-                title = link_match.group(2).strip()
+        for url, content in cards:
+            if url in seen_urls:
+                continue
 
-                if url not in seen_urls and len(title) > 3:
-                    seen_urls.add(url)
-                    item = {"url": url, "title": title}
+            # Ensure URL is absolute
+            if not url.startswith("http"):
+                url = "https://4khdhub.dad" + url if url.startswith("/") else "https://4khdhub.dad/" + url
 
-                    # Year
-                    year_m = re.search(r'\b(19|20)\d{2}\b', title)
-                    if year_m:
-                        item["year"] = year_m.group(0)
+            seen_urls.add(url)
+            item = {"url": url}
 
-                    # Poster
-                    img_m = re.search(r'<img[^>]*src="([^"]+)"', card)
-                    if img_m:
-                        item["poster"] = img_m.group(1)
-
-                    # Type
-                    if any(x in title.lower() for x in ["season", "series", "s01", "s02", "episode"]):
-                        item["type"] = "series"
-                    else:
-                        item["type"] = "movie"
-
-                    results.append(item)
-
-        # Pattern 2: Fallback - find all movie links directly
-        if not results:
-            all_links = re.findall(r'href="(https://4khdhub\.dad/[^"?]+)"[^>]*>\s*([^<]+)', html)
-
-            for url, title in all_links:
-                title = title.strip()
-                # Skip nav/footer links
-                if any(x in url.lower() for x in ['/page/', '/category/', '/about', '/contact', '/dmca', '/privacy']):
-                    continue
-                if url in seen_urls or len(title) < 3:
-                    continue
-
-                seen_urls.add(url)
-                item = {"url": url, "title": title}
-
-                year_m = re.search(r'\b(19|20)\d{2}\b', title)
-                if year_m:
-                    item["year"] = year_m.group(0)
-
-                if any(x in title.lower() for x in ["season", "series", "s01", "s02", "episode"]):
-                    item["type"] = "series"
+            # Title
+            title_m = re.search(r'class="movie-card-title"[^>]*>([^<]+)', content)
+            if title_m:
+                item["title"] = title_m.group(1).strip()
+            else:
+                # Fallback: look for alt tag in image
+                alt_m = re.search(r'alt="([^"]+)"', content)
+                if alt_m:
+                    item["title"] = alt_m.group(1).strip()
                 else:
-                    item["type"] = "movie"
+                    item["title"] = "Unknown"
 
-                results.append(item)
+            # Year
+            year_m = re.search(r'class="movie-card-meta"[^>]*>\s*(\d{4})', content)
+            if year_m:
+                item["year"] = year_m.group(1)
+
+            # Poster
+            poster_m = re.search(r'<img[^>]*src="([^"]+)"', content)
+            if poster_m:
+                item["poster"] = poster_m.group(1)
+
+            # Type detection
+            if any(x in item["title"].lower() for x in ["season", "series", "s01", "s02", "episode"]):
+                item["type"] = "series"
+            else:
+                item["type"] = "movie"
+
+            results.append(item)
 
         return {
             "query": query,
